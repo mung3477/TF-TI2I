@@ -188,20 +188,20 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
     #     latents = init_latents.to(device=device, dtype=dtype)
 
     #     return latents
-    
+
     # For img2img
     def get_inverse_timesteps(self, num_inference_steps, strength, device):
         # get the original timestep using init_timestep
         init_timestep = min(num_inference_steps * strength, num_inference_steps)
 
         t_start = int(max(num_inference_steps - init_timestep, 0))
-        
+
         timesteps = self.scheduler.timesteps[t_start * self.scheduler.order :][::-1]
         if hasattr(self.scheduler, "set_begin_index"):
             self.scheduler.set_begin_index(num_inference_steps-1)
 
         return timesteps, num_inference_steps - t_start
-    
+
     # For img2img
     def get_timesteps(self, num_inference_steps, strength, device):
         # get the original timestep using init_timestep
@@ -213,7 +213,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
             self.scheduler.set_begin_index(t_start * self.scheduler.order)
 
         return timesteps, num_inference_steps - t_start
-    
+
 
     def pred_x0(self, model_output, timestep, sample):
 
@@ -298,7 +298,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
     def __len__(self):
         return self.config.num_train_timesteps
-    
+
 
     @torch.no_grad()
     def inverse_a_forward_ab(
@@ -481,14 +481,14 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
 
         # Start dual branch forward
-        
+
         timesteps, num_inference_steps = retrieve_timesteps(
             self.scheduler, input_num_inference_steps, device, sigmas=sigmas, **scheduler_kwargs
         )
         timesteps, num_inference_steps = self.get_timesteps(num_inference_steps, strength, device)
 
         latent_timestep = timesteps[:1].repeat(batch_size * num_images_per_prompt)
-        
+
         if debug:
             print("sigmas", self.scheduler.sigmas)
             print("DEBUG MODE ON")
@@ -564,7 +564,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 latents_dtype = latents.dtype
                 latents = self.scheduler.step(noise_pred, t, latents, return_dict=False)[0]
                 if debug:
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -607,16 +607,16 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list}
-        
+
         if not return_dict:
             return (image,)
 
         return image
-    
+
     @torch.no_grad()
     def inverse_forward(
         self,
@@ -651,7 +651,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         mu: Optional[float] = None,
         debug=False,
     ):
-        
+
         if debug:
             print("sigmas", self.scheduler.sigmas)
             print("DEBUG MODE ON")
@@ -746,7 +746,6 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 device,
                 generator,
             )
-        print("LATENTS shape", latents.shape)
 
         # 6. Denoising loop
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
@@ -821,14 +820,14 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
 
 
-        
+
         timesteps, num_inference_steps = retrieve_timesteps(
             self.scheduler, input_num_inference_steps, device, sigmas=sigmas, **scheduler_kwargs
         )
         timesteps, num_inference_steps = self.get_timesteps(num_inference_steps, strength, device)
 
         latent_timestep = timesteps[:1].repeat(batch_size * num_images_per_prompt)
-        
+
 
 
         (
@@ -866,7 +865,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
-                
+
                 timestep = t.expand(latent_model_input.shape[0])
 
                 noise_pred = self.transformer(
@@ -888,7 +887,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 latents = self.scheduler.step(noise_pred, t, latents, return_dict=False)[0]
                 if debug:
                     pred_0 = self.pred_x0(noise_pred, t, latents)
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -931,11 +930,11 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list}
-        
+
         if not return_dict:
             return (image,)
 
@@ -1155,7 +1154,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         timesteps, num_inference_steps = self.get_timesteps(num_inference_steps, strength, device)
 
         latent_timestep = timesteps[:1].repeat(batch_size * num_images_per_prompt)
-        
+
 
 
         (
@@ -1193,7 +1192,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
-                
+
                 timestep = t.expand(latent_model_input.shape[0])
 
                 noise_pred = self.transformer(
@@ -1215,7 +1214,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 latents = self.scheduler.step(noise_pred, t, latents, return_dict=False)[0]
                 if debug:
                     pred_0 = self.pred_x0(noise_pred, t, latents)
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -1258,11 +1257,11 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list}
-        
+
         if not return_dict:
             return (image,)
 
@@ -1301,7 +1300,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         mu: Optional[float] = None,
         debug=False,
     ):
-        
+
         if debug:
             print("sigmas", self.scheduler.sigmas)
             print("DEBUG MODE ON")
@@ -1486,7 +1485,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         callback_on_step_end = None,
         num_warmup_steps = 0,
         debug=False,
-        
+
     ):
 
 
@@ -1858,12 +1857,12 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                                   timesteps=timesteps,
                                   latents=latents,
                                   mu=mu,
-                                  sigmas=self.scheduler.sigmas, 
+                                  sigmas=self.scheduler.sigmas,
                                   pooled_prompt_embeds=pooled_prompt_embeds,
                                   prompt_embeds=prompt_embeds,
                                   num_inference_steps=num_inference_steps,
                                   callback_on_step_end=callback_on_step_end, callback_on_step_end_tensor_inputs=callback_on_step_end_tensor_inputs,num_warmup_steps=num_warmup_steps)
-        
+
         (
             prompt_embeds,
             negative_prompt_embeds,
@@ -1886,7 +1885,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         if self.do_classifier_free_guidance:
             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
             pooled_prompt_embeds = torch.cat([negative_pooled_prompt_embeds, pooled_prompt_embeds], dim=0)
-        
+
         latents, debug_dict = self.denoise_2o(inverse=False, second_order=True, debug=debug,
                                   latents=latents,
                                   timesteps=timesteps,
@@ -1910,7 +1909,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         self.maybe_free_model_hooks()
 
         return image, debug_dict
-        
+
         if not return_dict:
             return (image,)
 
@@ -1967,7 +1966,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         latents = init_latents.to(device=device, dtype=dtype)
 
         return latents
-    
+
     # For img2img
     def prepare_image_latents_nonoise(self, image, timestep, batch_size, num_images_per_prompt, dtype, device, generator=None):
         if not isinstance(image, (torch.Tensor, PIL.Image.Image, list)):
@@ -2016,7 +2015,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         # get latents
         latents = init_latents.to(device=device, dtype=dtype)
         return latents
-    
+
     def prepare_latents(
         self,
         batch_size,
@@ -2047,8 +2046,8 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
 
         return latents
-    
-    
+
+
     # For img2img
     def get_timesteps(self, num_inference_steps, strength, device):
         # get the original timestep using init_timestep
@@ -2200,7 +2199,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
         self._num_timesteps = len(timesteps)
 
-        
+
         if debug:
             print("time steps", timesteps)
             print("sigmas", self.scheduler.sigmas)
@@ -2254,7 +2253,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
                 if debug:
                     pred_0 = self.pred_x0(noise_pred, t, latents)
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -2296,16 +2295,16 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list, "xt": xt_list}
-        
+
         if not return_dict:
             return (image,)
 
         return image
-    
+
 
 
     @torch.no_grad()
@@ -2437,13 +2436,13 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 generator,
             )
             latents = torch.cat([latents, image_latents], dim=0)
-        
+
 
         # 6. Denoising loop
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
         self._num_timesteps = len(timesteps)
 
-        
+
         if debug:
             print("time steps", timesteps)
             print("sigmas", self.scheduler.sigmas)
@@ -2455,7 +2454,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
                 if self.interrupt:
                     continue
                 latents = latents[:1]
-                
+
 
                 for sub_image in images:
                     # 3. Preprocess image
@@ -2502,7 +2501,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
                 if debug:
                     pred_0 = self.pred_x0(noise_pred, t, latents)
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -2544,16 +2543,16 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list,"xt": xt_list}
-        
+
         if not return_dict:
             return (image,)
 
         return image
-    
+
 
     @torch.no_grad()
     def img2img(
@@ -2681,7 +2680,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
         self._num_timesteps = len(timesteps)
 
-        
+
         if debug:
             print("time steps", timesteps)
             print("sigmas", self.scheduler.sigmas)
@@ -2717,7 +2716,7 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
                 if debug:
                     pred_0 = self.pred_x0(noise_pred, t, latents)
-                    
+
                     pred_0 = (pred_0/ self.vae.config.scaling_factor) + self.vae.config.shift_factor
                     image = self.vae.decode(pred_0.to(self.vae.dtype), return_dict=False)[0]
                     image = self.image_processor.postprocess(image, output_type=output_type)
@@ -2759,11 +2758,11 @@ class TI2I_StableDiffusion3Pipeline(StableDiffusion3Pipeline):
 
         # Offload all models
         self.maybe_free_model_hooks()
-        
+
         if debug:
             print("return this")
             return image, {"pred_0": pred_0_list}
-        
+
         if not return_dict:
             return (image,)
 

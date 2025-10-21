@@ -1,9 +1,12 @@
+import os
+os.environ["HF_HOME"] = "/root/Desktop/workspace/yujin/woosung/.hub"
+
 import PIL
 from diffusers.utils import make_image_grid
 import torch
 from src.customized_pipe import TI2I_StableDiffusion3Pipeline
 from src.attn_processor import TI2I_JointAttnProcessor2_0_multi
-import os
+
 
 # pipe = Customized_StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16)
 # pipe = Customized_StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers",
@@ -14,7 +17,7 @@ pipe = TI2I_StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusi
                                                             device_map="balanced")
 
 
-        
+
 from PIL import Image
 operator = "concat"
 from tqdm import tqdm
@@ -51,7 +54,7 @@ def convert_to_raimg_prompt(source_prompt):
     tex_match = re.findall(r"<tex>(.*?)</tex>", source_prompt)
     if tex_match:
         ref_txt_dict["tex"]=tex_match
-        
+
 
 
     bg_match = re.findall(r"<bg>(.*?)</bg>", source_prompt)
@@ -60,7 +63,7 @@ def convert_to_raimg_prompt(source_prompt):
 
 
     # sub_prompts=[]
-    # for word in source_prompt.split():         
+    # for word in source_prompt.split():
     #     word = word.replace("<obj>", "</obj>").replace("<bg>", "</bg>").replace("<tex>", "</tex>").replace("<act>", "</act>")
     #     emu_prompt.append(word)
     return source_prompt.replace("<obj>","").replace("</obj>","").replace("<bg>","").replace("</bg>","").replace("<tex>","").replace("</tex>","").replace("<act>","").replace("</act>",""),ref_txt_dict
@@ -89,7 +92,7 @@ for test_type in  ["case_1"]:
         os.makedirs(f"{out_dir}/{gen_dir}")
     for index, source_prompt in tqdm(enumerate(source_prompt_list), total=len(source_prompt_list),
                                       desc=f"Generating entry: {test_type}, output: {out_dir}/{gen_dir}"):
-        
+
         main_prompt, ref_txt_dict = convert_to_raimg_prompt(source_prompt)
         height=1024
         width=1024
@@ -126,7 +129,7 @@ for test_type in  ["case_1"]:
                                                                                                         },
                                                                                         "debug":False},
                                                                     ref_control_signal={"on":True,
-                                                                                        "ref_idxs":[0,1,2,3], 
+                                                                                        "ref_idxs":[0,1,2,3],
                                                                                         "control_type":"main_context",
                                                                                         "debug":False,
                                                                                         "control_layers":[i for i in range(25,40)],

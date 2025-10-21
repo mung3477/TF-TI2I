@@ -1,12 +1,21 @@
+import os
+os.environ["HF_HOME"] = "/root/Desktop/workspace/yujin/woosung/.hub"
+
 import numpy as np
 import torch
-import os
+
 import re
 from tqdm import tqdm
 import PIL
 from PIL import Image
 from diffusers.utils import make_image_grid
 import sys
+
+import dotenv
+from huggingface_hub import login
+
+dotenv.load_dotenv()
+login(os.getenv("HF_TOKEN"))
 
 from src.customized_pipe import TI2I_StableDiffusion3Pipeline
 from src.attn_processor import TI2I_JointAttnProcessor2_0_multi
@@ -39,6 +48,10 @@ test_type_2_image_assigment = {
 }
 
 def convert_to_raimg_prompt(source_prompt):
+    """
+        Parse source prompt to extract reference text for different components.
+        Returns the cleaned main prompt and a dictionary of reference texts.
+    """
     ref_txt_dict={}
     obj_match = re.findall(r"<obj>(.*?)</obj>", source_prompt)
     if obj_match:
@@ -52,7 +65,7 @@ def convert_to_raimg_prompt(source_prompt):
     tex_match = re.findall(r"<tex>(.*?)</tex>", source_prompt)
     if tex_match:
         ref_txt_dict["tex"]=tex_match
-        
+
 
 
     bg_match = re.findall(r"<bg>(.*?)</bg>", source_prompt)
@@ -62,7 +75,7 @@ def convert_to_raimg_prompt(source_prompt):
 
     image_assignment = test_type_2_image_assigment[test_type]
     # sub_prompts=[]
-    # for word in source_prompt.split():         
+    # for word in source_prompt.split():
     #     word = word.replace("<obj>", "</obj>").replace("<bg>", "</bg>").replace("<tex>", "</tex>").replace("<act>", "</act>")
     #     emu_prompt.append(word)
     return source_prompt.replace("<obj>","").replace("</obj>","").replace("<bg>","").replace("</bg>","").replace("<tex>","").replace("</tex>","").replace("<act>","").replace("</act>",""),ref_txt_dict
@@ -73,7 +86,7 @@ data_dir="./data/1_single_entry"
 out_dir="./data/output_1_single_entry"
 
 
-for test_type in  ["objimg_acttxt","objimg_bgtxt","objimg_textxt","objtxt_actimg","objtxt_bgimg","objtxt_teximg"]:
+for test_type in  ["objimg_acttxt","objimg_textxt","objimg_bgtxt","objtxt_actimg","objtxt_bgimg","objtxt_teximg"][0:2]:
     if os.path.exists(f"{data_dir}/{test_type}"):
         print(test_type)
     refer_dir=f"ref_{test_type}"
@@ -90,20 +103,21 @@ for test_type in  ["objimg_acttxt","objimg_bgtxt","objimg_textxt","objtxt_actimg
             source_prompt_list.append(line)
     if not os.path.exists(f"{out_dir}/{gen_dir}"):
         os.makedirs(f"{out_dir}/{gen_dir}")
+
+    SKIP_NUM=3
+    source_prompt_list = source_prompt_list[SKIP_NUM:]
     for index, source_prompt in tqdm(enumerate(source_prompt_list), total=len(source_prompt_list),
                                       desc=f"Generating entry: {test_type}, output: {out_dir}/{gen_dir}"):
-        
+
         main_prompt, ref_txt_dict = convert_to_raimg_prompt(source_prompt)
         height=1024
         width=1024
         operator="concat"
-        ref_img_path=f"{data_dir}/{refer_dir}/ref_{index:04d}.jpg"
+        ref_img_path=f"{data_dir}/{refer_dir}/ref_{(index+SKIP_NUM):04d}.jpg"
         ref_image = PIL.Image.open(ref_img_path).convert("RGB").resize((height, width))
         images=[ref_image]
         prompt_a = main_prompt
         prompt_b = [main_prompt]
-
-
 
         layer_count = 0
         attn_processors = []
@@ -120,7 +134,7 @@ for test_type in  ["objimg_acttxt","objimg_bgtxt","objimg_textxt","objtxt_actimg
 
         iter_net(pipe.transformer)
 
-        torch.manual_seed(0)
+        torch.manual_seed(42)
         pipe.enable_attention_slicing()
 
         switch_images = pipe.img2img_multi(

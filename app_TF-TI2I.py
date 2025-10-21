@@ -1,3 +1,6 @@
+import os
+os.environ["HF_HOME"] = "/root/Desktop/workspace/woosung/.hub"
+
 import PIL
 from PIL import Image
 from diffusers.utils import make_image_grid
@@ -44,21 +47,21 @@ def ti2i_gen(prompt, img1, use_img1,sub_p1, img2, use_img2,sub_p2, img3, use_img
         for child in net.children():
             if "Attention" in child.__class__.__name__:
                 child.processor = TI2I_JointAttnProcessor2_0_multi(layer=layer_count, contextual_replace=True,
-                                                                wta_control_signal={"on":wta_control,
-                                                                                    "hyper_parameter":{
-                                                                                                    "wta_weight":[1]*num_refer,
-                                                                                                    "cross2ref":True,
-                                                                                                    "wta_shift":[0]*num_refer,
-                                                                                                    "wta_cross":False
-                                                                                                    },
-                                                                                    "debug":False},
-                                                                ref_control_signal={"on":rcm_control,
-                                                                                    "ref_idxs":[i for i in range(num_refer)], 
-                                                                                    "control_type":"main_context",
-                                                                                    "debug":False,
-                                                                                    "control_layers":[i for i in range(c_layer,40)],
-                                                                                    "hyper_parameter":{}},
-                                                                                    )
+                    wta_control_signal={"on":wta_control,
+                                        "hyper_parameter":{
+                                                        "wta_weight":[1]*num_refer,
+                                                        "cross2ref":True,
+                                                        "wta_shift":[0]*num_refer,
+                                                        "wta_cross":False
+                                                        },
+                                        "debug":False},
+                    ref_control_signal={"on":rcm_control,
+                                        "ref_idxs":[i for i in range(num_refer)],
+                                        "control_type":"main_context",
+                                        "debug":False,
+                                        "control_layers":[i for i in range(c_layer,40)],
+                                        "hyper_parameter":{}},
+                                        )
                 attn_processors.append(child.processor)
                 layer_count += 1
             iter_net(child)
@@ -77,12 +80,12 @@ def ti2i_gen(prompt, img1, use_img1,sub_p1, img2, use_img2,sub_p2, img3, use_img
     height=1024,
     width=1024,
     )
-    
+
     return switch_images[0]
 
 with gr.Blocks() as demo:
     gr.Markdown("# TF-TI2I 📃➕🖼️➡️🖼️")
-    
+
     with gr.Row():
         with gr.Column(scale=1):
             load_button = gr.Button("Load Model")
@@ -103,28 +106,28 @@ with gr.Blocks() as demo:
             use_img1 = gr.Checkbox(label="Use this image as reference🖼️",value=True)
             sub_p1 = gr.Textbox(label="Sub Prompt for reference📃(optional) ",value="a dinosaur")
             img1 = gr.Image(label="Image 1", value=Image.open("refer_data/A dinosaur.png").resize((1024,1024)))
-            
+
         with gr.Column(scale=1):
             use_img2 = gr.Checkbox(label="Use this image as reference🖼️",value=True)
             sub_p2 = gr.Textbox(label="Sub Prompt for reference📃(optional) ",value="crystal")
             img2 = gr.Image(label="Image 2", value=Image.open("refer_data/crystal dog.png").resize((1024,1024)))
-            
+
         with gr.Column(scale=1):
             use_img3 = gr.Checkbox(label="Use this image as reference🖼️",value=True)
             sub_p3 = gr.Textbox(label="Sub Prompt for reference📃(optional) ",value="breathing fire")
             img3 = gr.Image(label="Image 3",value=Image.open("refer_data/breathing fire.png").resize((1024,1024)))
-            
+
         with gr.Column(scale=1):
             use_img4 = gr.Checkbox(label="Use this image as reference🖼️",value=True)
             sub_p4 = gr.Textbox(label="Sub Prompt for reference📃(optional) ",value="Starry Night")
             img4 = gr.Image(label="Image 4",value=Image.open("refer_data/ood_starry.jpg").resize((1024,1024)))
-            
-    
-    
-    
+
+
+
+
     load_button.click(load_model, outputs=load_status)
-    submit_button.click(ti2i_gen, 
-                        inputs=[prompt, img1, use_img1,sub_p1, img2, use_img2,sub_p2, img3, use_img3,sub_p3, img4, use_img4,sub_p4, clayer_slider, seed_slider, wta_control,rcm_control], 
+    submit_button.click(ti2i_gen,
+                        inputs=[prompt, img1, use_img1,sub_p1, img2, use_img2,sub_p2, img3, use_img3,sub_p3, img4, use_img4,sub_p4, clayer_slider, seed_slider, wta_control,rcm_control],
                         outputs=output)
 
 demo.launch()

@@ -62,7 +62,7 @@ def texture_control_scaled_dot_product_attention(query, key, value, attn_mask=No
     attn_weight = query @ key.transpose(-2, -1) * scale_factor
     # attn_weight torch.Size([1, 38, 4429, 4762])
     # print("attn_weight",attn_weight.shape)
-    
+
     if attn_reweight is not None:
         attn_weight[:,:,:4096,:4096] *= attn_reweight[0] # self2self
         attn_weight[:,:,:4096,4096:4429] *= attn_reweight[1] # self2cross
@@ -149,7 +149,7 @@ class Texture_Control_JointAttnProcessor2_0_multi:
 
             if self.contextual_replace:
                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
                 if self.operator == "mean":
                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -180,7 +180,7 @@ class Texture_Control_JointAttnProcessor2_0_multi:
                     # print("side_query",side_query.shape)
                     # print("side_key",side_key.shape)
                     # print("side_value",side_value.shape)
-                
+
                     if self.save_attn:
                         side_attn_weight = compute_attn_weight(side_query, side_key, side_value)
 
@@ -237,7 +237,7 @@ class Texture_Control_JointAttnProcessor2_0_multi:
 
 
                     # print("side_hidden_states",side_hidden_states.shape)
-                                
+
                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
                 # print("bs",bs)
             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
@@ -271,7 +271,7 @@ class Texture_Control_JointAttnProcessor2_0_multi:
             return hidden_states, encoder_hidden_states
         else:
             return hidden_states
-        
+
 
 def obj_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_p=0.0,
         is_causal=False, scale=None,  attn_reweight=None) -> torch.Tensor:
@@ -294,11 +294,11 @@ def obj_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_
     attn_weight = query @ key.transpose(-2, -1) * scale_factor
     # attn_weight torch.Size([1, 38, 4429, 4762])
     # print("attn_weight",attn_weight.shape)
-    
+
     if attn_reweight is not None:
 
         attn_weight[:, :, 4096:, :4096] *= attn_reweight[0] # ref2self
-        attn_weight[:, :, 4096:, 4096:4429] *= attn_reweight[1] # ref2ref 
+        attn_weight[:, :, 4096:, 4096:4429] *= attn_reweight[1] # ref2ref
 
     attn_weight += attn_bias
     attn_weight = torch.softmax(attn_weight, dim=-1)
@@ -380,7 +380,7 @@ class Object_Control_JointAttnProcessor2_0_multi:
 
             if self.contextual_replace:
                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
                 if self.operator == "mean":
                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -431,7 +431,7 @@ class Object_Control_JointAttnProcessor2_0_multi:
                         obj_ref_idxs = self.obj_control_signal["ref_idxs"]
                         obj_ref_prompts = self.obj_control_signal["ref_prompts"]
                         obj_control_hyper_parameter=self.obj_control_signal["hyper_parameter"]
-                        
+
                         obj_control_hidden_states=[]
                         for instance_idx, obj_ref_idx in enumerate(obj_ref_idxs):
                             obj_query = torch.cat([query[bs+obj_ref_idx+1 : bs+obj_ref_idx+1+1],
@@ -466,7 +466,7 @@ class Object_Control_JointAttnProcessor2_0_multi:
                             #         r2s_attn_weight = torch.ones_like(mean_attn_map)
                             #     r2s_attn_weight+=base_attn_weight
                             #     r2s_attn_weight = torch.clamp(r2s_attn_weight, 0, 1)
-                            
+
                             ref_hidden_states = obj_scaled_dot_product_attention(obj_query, obj_key, obj_value, attn_reweight=[r2s_attn_weight,1])
                             obj_control_hidden_states.append(ref_hidden_states)
                             if self.debug:
@@ -475,7 +475,7 @@ class Object_Control_JointAttnProcessor2_0_multi:
                     side_hidden_states = F.scaled_dot_product_attention(side_query, side_key, side_value, dropout_p=0.0, is_causal=False)
 
                     # print("side_hidden_states",side_hidden_states.shape)
-                                
+
                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
                 # print("bs",bs)
             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
@@ -537,11 +537,11 @@ def refer_scaled_dot_product_attention(query, key, value, attn_mask=None, dropou
     attn_weight = query @ key.transpose(-2, -1) * scale_factor
     # attn_weight torch.Size([1, 38, 4429, 4762])
     # print("attn_weight",attn_weight.shape)
-    
+
     if attn_reweight is not None:
 
         attn_weight[:, :, 4096:, :4096] *= attn_reweight[0] # ref2self
-        attn_weight[:, :, 4096:, 4096:4429] *= attn_reweight[1] # ref2ref 
+        attn_weight[:, :, 4096:, 4096:4429] *= attn_reweight[1] # ref2ref
 
     attn_weight += attn_bias
     attn_weight = torch.softmax(attn_weight, dim=-1)
@@ -580,7 +580,7 @@ def main_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout
     attn_weight = query @ key.transpose(-2, -1) * scale_factor
     # attn_weight torch.Size([1, 38, 4429, 4762])
     # print("attn_weight",attn_weight.shape)
-    
+
     if attn_reweight_dict is not None:
         attn_weight[:,:,:4096,:4096] *= attn_reweight_dict["self"] # self2self
         attn_weight[:,:,:4096,4096:4429] *= attn_reweight_dict["cross"] # self2cross
@@ -591,7 +591,7 @@ def main_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout
             attn_weight[:, :, 4096:, 4429+refer_idx*333:4762+refer_idx*333] *= refer_weight
 
         for refer_idx, refer_weight  in zip(attn_reweight_dict["global_reweight_idx"],attn_reweight_dict["global_reweight_weight"]):
-            attn_weight[:, :, 4096:, 4429+refer_idx*333:4762+refer_idx*333] *= refer_weight 
+            attn_weight[:, :, 4096:, 4429+refer_idx*333:4762+refer_idx*333] *= refer_weight
 
     attn_weight += attn_bias
     attn_weight = torch.softmax(attn_weight, dim=-1)
@@ -637,7 +637,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
         self.bg_control_signal = bg_control_signal
 
         self.debug_dict={}
-        # IF NO LAYER ASSIGNMENT OR STEP ASSIGNMENT, activate contextual control 
+        # IF NO LAYER ASSIGNMENT OR STEP ASSIGNMENT, activate contextual control
 
     def __call__(
         self,
@@ -692,7 +692,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
 
             if self.contextual_replace:
                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
                 if self.operator == "mean":
                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -713,7 +713,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                     encoder_hidden_states_key_proj[bs] = torch.cat(ks, dim=0)
                     encoder_hidden_states_value_proj[bs] = torch.cat(vs, dim=0)
                 elif self.operator == "concat":
-                    # Conditional Main Branch (bs:bs+1), Conditional Refer Branches (bs+1:bs*2) 
+                    # Conditional Main Branch (bs:bs+1), Conditional Refer Branches (bs+1:bs*2)
 
                     main_encoder_hidden_states_key_proj = torch.cat(list(encoder_hidden_states_key_proj)[bs:bs*2], dim=1).unsqueeze(0)
                     main_encoder_hidden_states_value_proj = torch.cat(list(encoder_hidden_states_value_proj)[bs:bs*2], dim=1).unsqueeze(0)
@@ -777,7 +777,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                             else:
                                 # Neglect the attention weight
                                 r2s_attn_weight = torch.ones_like(mean_attn_map)
-                            
+
                             ref_hidden_states = refer_scaled_dot_product_attention(obj_query, obj_key, obj_value, attn_reweight=[r2s_attn_weight,1])
                             obj_control_hidden_states.append(ref_hidden_states)
 
@@ -844,11 +844,11 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                                     self.debug_dict["tex_control"] = {}
                                 debug_key=f"{self.step}_{self.layer}_{tex_ref_idx}"
                                 self.debug_dict["tex_control"][debug_key]=s2r_attn_weight.cpu()
-                                
+
                             s2r_attn_weight = s2r_attn_weight.view(-1,1)
                             tex_s2r_attn_list.append(s2r_attn_weight)
-                                                        
-    
+
+
                     if self.act_control_signal["on"]:
                         # act_control control r2s by mask IN REFER Branch
                         # similar to obj_control, but focus on blurred, strong features
@@ -866,7 +866,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                         step_match = control_step_list is None or self.step in control_step_list
                         layer_match = control_layer_list is None or self.layer in control_layer_list
 
-                    
+
                         act_control_hidden_states=[]
                         for act_ref_idx in act_ref_idxs:
                             act_query = torch.cat([query[bs+act_ref_idx+1 : bs+act_ref_idx+1+1],
@@ -905,7 +905,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                             else:
                                 # Neglect the attention weight
                                 r2s_attn_weight = 1
-                        
+
                             ref_hidden_states = refer_scaled_dot_product_attention(act_query, act_key, act_value, attn_reweight=[r2s_attn_weight,1])
                             act_control_hidden_states.append(ref_hidden_states)
 
@@ -939,7 +939,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                                 process_func = bg_control_hyper_parameter["process_func"]
                             else:
                                 process_func = process_attn_map
-                            
+
                             # Focusing on non-object area
                             s2r_attn_weight = (1-process_func(mean_attn_map))*mask_attn_reweight
 
@@ -971,13 +971,13 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                                     self.debug_dict["bg_control"] = {}
                                 debug_key=f"{self.step}_{self.layer}_{bg_ref_idx}"
                                 self.debug_dict["bg_control"][debug_key]=s2r_attn_weight.cpu()
-                                
+
                             s2r_attn_weight = s2r_attn_weight.view(-1,1)
                             bg_s2r_attn_list.append(s2r_attn_weight)
 
 
                     main2ref_mask=torch.ones([main_query.shape[2], main_key.shape[2]]).to(torch.bool).to(main_query.device)
-                
+
                     if self.global_control_signal["close_contextual_replace"]:
                         # if close contextual replace, we block inactivate reference to be utilzed by main branch
                         # otherwise main branch utilizing reference branch as default ()
@@ -1038,7 +1038,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                         if "main_branch_reweight" in signal["hyper_parameter"]:
                             global_reweight_idx += signal["ref_idxs"]
                             global_reweight_weight += signal["hyper_parameter"]["main_branch_reweight"]
-                
+
 
                     main_hidden_states = main_scaled_dot_product_attention(main_query, main_key, main_value, attn_mask=main2ref_mask, dropout_p=0.0,
                                                         is_causal=False, enable_gqa=False,
@@ -1067,7 +1067,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
                     #         if "main_branch_reweight" in signal["hyper_parameter"]:
                     #             global_reweight_idx += signal["ref_idxs"]
                     #             global_reweight_weight += signal["hyper_parameter"]["main_branch_reweight"]
-                    
+
 
                     #     main_hidden_states = main_scaled_dot_product_attention(main_query, main_key, main_value, attn_mask=main2ref_mask, dropout_p=0.0,
                     #                                         is_causal=False, enable_gqa=False,
@@ -1124,7 +1124,7 @@ class task_sepcific_JointAttnProcessor2_0_multi:
             return hidden_states, encoder_hidden_states
         else:
             return hidden_states
-        
+
 
 
 class Customized_JointAttnProcessor2_0_multi:
@@ -1189,7 +1189,7 @@ class Customized_JointAttnProcessor2_0_multi:
 
             if self.contextual_replace:
                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
                 if self.operator == "mean":
                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -1222,7 +1222,7 @@ class Customized_JointAttnProcessor2_0_multi:
                     # print("side_value",side_value.shape)
                     side_hidden_states = F.scaled_dot_product_attention(side_query, side_key, side_value, dropout_p=0.0, is_causal=False)
                     # print("side_hidden_states",side_hidden_states.shape)
-                                
+
                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
                 # print("bs",bs)
             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
@@ -1273,7 +1273,7 @@ def process_attn_map_otsu(data, blur_func=T.GaussianBlur(kernel_size=5, sigma=1)
 
     bins = 256  # 直方圖 bin 數
     bin_width = (data.max() - data.min()) / bins
-    
+
     # 計算直方圖（僅用 torch.histc）
     hist = torch.histc(data, bins=bins, min=min_val.item(), max=max_val.item())
 
@@ -1324,7 +1324,7 @@ def process_attn_map_otsu_debug(data, blur_func=T.GaussianBlur(kernel_size=5, si
 
     bins = 256  # 直方圖 bin 數
     bin_width = (data.max() - data.min()) / bins
-    
+
     # 計算直方圖（僅用 torch.histc）
     hist = torch.histc(data, bins=bins, min=min_val.item(), max=max_val.item())
 
@@ -1385,12 +1385,15 @@ def WTA_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_
 
     attn_weight = query @ key.transpose(-2, -1) * scale_factor
     # attn_weight torch.Size([1, 38, 4429, 4762])
-    # print("attn_weight",attn_weight.shape)
+
+    ##############################################################
+    # mean accross all the batch and heads
     mean_atn_weight = torch.mean(attn_weight, dim=[0,1])
     refer_score=[]
 
     wta_weight = wta_parameter["wta_weight"]
     wta_shift = wta_parameter["wta_shift"]
+    # mean of contextual attention weights (L2Ctx); noise latent consists of 4096 tokens
     abs_global_contextual_mean = torch.abs(torch.mean(mean_atn_weight[:,4096:]))
     if "wta_cross" in wta_parameter and wta_parameter["wta_cross"]:
         for ref_idx in range(len(wta_weight)):
@@ -1413,25 +1416,29 @@ def WTA_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_
             wta_bias[4096:,4429:] = float("-inf")
 
     else:
+        # we first measure the attention score of references to a given vision token
         for ref_idx in range(len(wta_weight)):
             score_shift = wta_shift[ref_idx]
+            # 4096(noise) + 333(text prompt) + 333(ref1) + 333(ref2) + ...
             total_score = torch.mean(mean_atn_weight[:,4429+333*ref_idx:4762+333*ref_idx], dim=-1)*wta_weight[ref_idx]+score_shift*abs_global_contextual_mean
-            # print("total_score",total_score.shape)
             refer_score.append(total_score)
         refer_score = torch.stack(refer_score, dim=1)
         refers_argmax = torch.argmax(refer_score, dim=1)
 
+        # (4096(noise) + 333(text prompt), 4096(noise) + 333(text prompt) + 333(ref1) + 333(ref2) + ...)
         wta_bias = torch.zeros(L, S, dtype=query.dtype, device=query.device)
-        # keep winner and set others to -inf
-        for ref_idx in range(len(wta_weight)):
-            rows_with_ref_idx = torch.nonzero(refers_argmax == ref_idx).squeeze()  # (N,)
-            # refer_before and after to be -inf
 
+        # and selectively keep only the contextual tokens with highest attention score to minimize distribution disturbances.
+        # keep winner and set others to -inf;
+        for ref_idx in range(len(wta_weight)):
+            # rows that should refer to ref_idx context
+            rows_with_ref_idx = torch.nonzero(refers_argmax == ref_idx).squeeze()  # (N,)
+            # set before and after ref_idx th context to be -inf
             wta_bias[rows_with_ref_idx,4429:4429+333*ref_idx] = float("-inf")
             wta_bias[rows_with_ref_idx,4762+333*ref_idx:] = float("-inf")
         if wta_parameter["cross2ref"]==False:
             wta_bias[4096:,4429:] = float("-inf")
-    
+
     if "global_shift_idxs" in wta_parameter:
         global_shift_idxs = wta_parameter["global_shift_idxs"]
         global_shift_weights = wta_parameter["global_shift_weights"]
@@ -1443,6 +1450,7 @@ def WTA_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_
 
     attn_weight = torch.softmax(attn_weight, dim=-1)
     attn_weight = torch.dropout(attn_weight, dropout_p, train=True)
+    ####################################################################################
     return attn_weight @ value
 
 def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dropout_p=0.0,
@@ -1542,7 +1550,7 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #         self.ref_control_signal=ref_control_signal
 #         self.schedule_control_signal=schedule_control_signal
 
-        
+
 #         self.replace_start = replace_start
 #         self.replace_end = replace_end
 #         self.operator = operator
@@ -1602,7 +1610,7 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 
 #             if self.contextual_replace:
 #                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
 #                 if self.operator == "mean":
 #                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
 #                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -1645,10 +1653,10 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #                             cur_step_ref_idxs = ref_idxs_schedule[self.step]
 #                             if ref_idx not in cur_step_ref_idxs:
 #                                 schedule_mask[:,4429+333*ref_idx:4762+333*ref_idx] = False
-  
+
 #                     else:
 #                         schedule_mask = None
-                    
+
 #                     main_hidden_states = WTA_scaled_dot_product_attention(main_query, main_key, main_value, dropout_p=0.0,
 #                                                                           attn_mask=schedule_mask,
 #                                                                           is_causal=False, wta_parameter=self.wta_parameter)
@@ -1663,19 +1671,19 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #                     # print("main_hidden_states",main_hidden_states.shape)
 
 #                     if self.ref_control_signal['on']:
-#                         ref_control_idxs = self.ref_control_signal['ref_idxs']                        
+#                         ref_control_idxs = self.ref_control_signal['ref_idxs']
 #                         ref_control_hyper_parameter=self.ref_control_signal["hyper_parameter"]
 #                         ref_control_hidden_states=[]
 #                         for instance_idx, ref_idx in enumerate(ref_control_idxs):
 
-                            
+
 #                             ref_query = torch.cat([query[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_query_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
 #                             ref_key = torch.cat([key[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_key_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
 #                             ref_value = torch.cat([value[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_value_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
-                            
+
 #                             if self.ref_control_signal["control_type"] == "main_prompt":
 #                                 attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                         torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs:bs+1]], dim=2))[:,:,:4096,4096:]
@@ -1698,7 +1706,7 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #                             else:
 #                                 process_func = process_attn_map_otsu
 
-#                             r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)               
+#                             r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)
 #                             ref_hidden_states = refer_scaled_dot_product_attention(ref_query, ref_key, ref_value, attn_reweight=[r2s_attn_weight,1])
 #                             ref_control_hidden_states.append(ref_hidden_states)
 
@@ -1713,8 +1721,8 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #                                     attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                                     torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs:bs+1]], dim=2))[:,:,:4096,4096:]
 #                                     s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                    
-                                    
+
+
 #                                     debug_key=f"{self.step}_{self.layer}_{ref_idx}"
 #                                     self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
 #                                     raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
@@ -1725,14 +1733,14 @@ def WTA_scaled_dot_product_attention_debug(query, key, value, attn_mask=None, dr
 #                                     attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                                         torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs+ref_idx+1:bs+ref_idx+2]], dim=2))[:,:,:4096,4096:]
 #                                     s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                    
-                                    
+
+
 #                                     debug_key=f"{self.step}_{self.layer}_{ref_idx}"
 #                                     self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
 #                                     raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
 #                                     self.debug_dict["ref_control"]["raw_"+debug_key]=raw_map.cpu()
 #                                     self.debug_dict["ref_control"]["bin_"+debug_key]=bin_map.cpu()
-                                    
+
 #                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
 #                 # print("bs",bs)
 #             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
@@ -1783,7 +1791,7 @@ class TI2I_JointAttnProcessor2_0_multi:
         self.step=-1
         self.layer=layer
         self.wta_control_signal=wta_control_signal
-        
+
         self.ref_control_signal=ref_control_signal
         self.contextual_replace = contextual_replace
         self.replace_start = replace_start
@@ -1845,7 +1853,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 
             if self.contextual_replace:
                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
                 if self.operator == "mean":
                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -1868,14 +1876,19 @@ class TI2I_JointAttnProcessor2_0_multi:
                 elif self.operator == "concat":
                     # Side branch
 
+                    # Concat text embeddings of positive text prompts
+                    # (4, 38(heads), 333, 64(head_dim)) => (1, 38, 666, 64)
                     main_encoder_hidden_states_key_proj = torch.cat(list(encoder_hidden_states_key_proj)[bs:bs*2], dim=1).unsqueeze(0)
                     main_encoder_hidden_states_value_proj = torch.cat(list(encoder_hidden_states_value_proj)[bs:bs*2], dim=1).unsqueeze(0)
+
+                    # Concat queries from latents originally used for generation
+                    # (1, 38, 4096, 64) + (1, 38, 333, 64) => (1, 38, 4429, 64)
                     main_query = torch.cat([query[bs:bs+1], encoder_hidden_states_query_proj[bs:bs+1]], dim=2)
+
+                    # Concat keys and values from image latent originally used for generation and all the positive text embeddings, including the one corresponds to the reference image
                     main_key = torch.cat([key[bs:bs+1], main_encoder_hidden_states_key_proj], dim=2)
                     main_value = torch.cat([value[bs:bs+1], main_encoder_hidden_states_value_proj], dim=2)
-                    # print("main_query",main_query.shape)
-                    # print("main_key",main_key.shape)
-                    # print("main_value",main_value.shape)
+
                     if not self.wta_control_signal["on"]:
                         main_hidden_states = F.scaled_dot_product_attention(main_query, main_key, main_value, dropout_p=0.0, is_causal=False)
                     else:
@@ -1896,17 +1909,20 @@ class TI2I_JointAttnProcessor2_0_multi:
                         if "control_layers" in self.ref_control_signal and self.layer not in self.ref_control_signal["control_layers"]:
                             pass
                         else:
-                            ref_control_idxs = self.ref_control_signal['ref_idxs']                        
+                            ref_control_idxs = self.ref_control_signal['ref_idxs']
                             ref_control_hyper_parameter=self.ref_control_signal["hyper_parameter"]
                             ref_control_hidden_states=[]
                             for instance_idx, ref_ref_idx in enumerate(ref_control_idxs):
+                                # concat reference latent with the text embedding of the reference prompt
                                 ref_query = torch.cat([query[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1],
                                                     encoder_hidden_states_query_proj[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1]], dim=2)
                                 ref_key = torch.cat([key[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1],
                                                     encoder_hidden_states_key_proj[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1]], dim=2)
                                 ref_value = torch.cat([value[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1],
                                                     encoder_hidden_states_value_proj[bs+ref_ref_idx+1 : bs+ref_ref_idx+1+1]], dim=2)
+                                # I2Ctx
                                 attn_map = compute_attn_weight(ref_query, ref_key)[:,:,:4096,4096:]
+                                # Mean for each image token
                                 mean_attn_map = torch.mean(attn_map, dim=[1,3])[0]
 
                                 if "base_attn_weight" in ref_control_hyper_parameter:
@@ -1923,7 +1939,7 @@ class TI2I_JointAttnProcessor2_0_multi:
                                 else:
                                     process_func = process_attn_map_otsu
 
-                                r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)               
+                                r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)
                                 ref_hidden_states = refer_scaled_dot_product_attention(ref_query, ref_key, ref_value, attn_reweight=[r2s_attn_weight,1])
                                 ref_control_hidden_states.append(ref_hidden_states)
 
@@ -1939,8 +1955,8 @@ class TI2I_JointAttnProcessor2_0_multi:
                                         attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
                                                                             torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs:bs+1]], dim=2))[:,:,:4096,4096:]
                                         s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                        
-                                        
+
+
                                         debug_key=f"{self.step}_{self.layer}_{ref_idx}"
                                         self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
                                         raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
@@ -1951,14 +1967,14 @@ class TI2I_JointAttnProcessor2_0_multi:
                                         attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
                                                                             torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs+ref_idx+1:bs+ref_idx+2]], dim=2))[:,:,:4096,4096:]
                                         s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                        
-                                        
+
+
                                         debug_key=f"{self.step}_{self.layer}_{ref_idx}"
                                         self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
                                         raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
                                         self.debug_dict["ref_control"]["raw_"+debug_key]=raw_map.cpu()
                                         self.debug_dict["ref_control"]["bin_"+debug_key]=bin_map.cpu()
-                                    
+
                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
                 # print("bs",bs)
             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
@@ -1967,6 +1983,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 
         hidden_states = F.scaled_dot_product_attention(query, key, value, dropout_p=0.0, is_causal=False)
         if self.contextual_replace and self.operator == "concat":
+            # Replace hidden states of the main generation section
             hidden_states[bs:bs+1]=main_hidden_states
             if self.ref_control_signal["on"]:
                 # If define control layer but not use it
@@ -2023,7 +2040,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 #         self.ref_control_signal=ref_control_signal
 #         self.schedule_control_signal=schedule_control_signal
 
-        
+
 #         self.replace_start = replace_start
 #         self.replace_end = replace_end
 #         self.operator = operator
@@ -2083,7 +2100,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 
 #             if self.contextual_replace:
 #                 bs = len(encoder_hidden_states_query_proj)//2
-                
+
 #                 if self.operator == "mean":
 #                     encoder_hidden_states_query_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_query_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
 #                     encoder_hidden_states_key_proj[bs, :, self.replace_start:self.replace_end, :] = torch.mean(encoder_hidden_states_key_proj[bs+1:bs*2, :, self.replace_start:self.replace_end, :], dim=0)
@@ -2126,7 +2143,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 #                             cur_step_ref_idxs = ref_idxs_schedule[self.step]
 #                             if ref_idx not in cur_step_ref_idxs:
 #                                 schedule_mask[:,4429+333*ref_idx:4762+333*ref_idx] = False
-  
+
 #                     else:
 #                         schedule_mask = None
 #                     if self.wta_control_signal["on"]:
@@ -2147,19 +2164,19 @@ class TI2I_JointAttnProcessor2_0_multi:
 #                     # print("main_hidden_states",main_hidden_states.shape)
 
 #                     if self.ref_control_signal['on']:
-#                         ref_control_idxs = self.ref_control_signal['ref_idxs']                        
+#                         ref_control_idxs = self.ref_control_signal['ref_idxs']
 #                         ref_control_hyper_parameter=self.ref_control_signal["hyper_parameter"]
 #                         ref_control_hidden_states=[]
 #                         for instance_idx, ref_idx in enumerate(ref_control_idxs):
 
-                            
+
 #                             ref_query = torch.cat([query[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_query_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
 #                             ref_key = torch.cat([key[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_key_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
 #                             ref_value = torch.cat([value[bs+ref_idx+1 : bs+ref_idx+1+1],
 #                                                 encoder_hidden_states_value_proj[bs+ref_idx+1 : bs+ref_idx+1+1]], dim=2)
-                            
+
 #                             if self.ref_control_signal["control_type"] == "main_prompt":
 #                                 attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                         torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs:bs+1]], dim=2))[:,:,:4096,4096:]
@@ -2182,7 +2199,7 @@ class TI2I_JointAttnProcessor2_0_multi:
 #                             else:
 #                                 process_func = process_attn_map_otsu
 
-#                             r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)               
+#                             r2s_attn_weight = process_func(mean_attn_map*mask_attn_reweight+base_attn_weight)
 #                             ref_hidden_states = refer_scaled_dot_product_attention(ref_query, ref_key, ref_value, attn_reweight=[r2s_attn_weight,1])
 #                             ref_control_hidden_states.append(ref_hidden_states)
 
@@ -2197,8 +2214,8 @@ class TI2I_JointAttnProcessor2_0_multi:
 #                                     attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                                     torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs:bs+1]], dim=2))[:,:,:4096,4096:]
 #                                     s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                    
-                                    
+
+
 #                                     debug_key=f"{self.step}_{self.layer}_{ref_idx}"
 #                                     self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
 #                                     raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
@@ -2209,14 +2226,14 @@ class TI2I_JointAttnProcessor2_0_multi:
 #                                     attn_map = compute_attn_weight(query[bs+ref_idx+1:bs+ref_idx+2],
 #                                                                         torch.cat([key[bs+ref_idx+1:bs+ref_idx+2], encoder_hidden_states_key_proj[bs+ref_idx+1:bs+ref_idx+2]], dim=2))[:,:,:4096,4096:]
 #                                     s2c_attn_weight=torch.mean(attn_map, dim=[1,3])[0]
-                                    
-                                    
+
+
 #                                     debug_key=f"{self.step}_{self.layer}_{ref_idx}"
 #                                     self.debug_dict["ref_control"][debug_key]=s2c_attn_weight.cpu()
 #                                     raw_map, bin_map = process_attn_map_otsu_debug(s2c_attn_weight)
 #                                     self.debug_dict["ref_control"]["raw_"+debug_key]=raw_map.cpu()
 #                                     self.debug_dict["ref_control"]["bin_"+debug_key]=bin_map.cpu()
-                                    
+
 #                 # print("encoder_hidden",encoder_hidden_states_query_proj[2].shape)
 #                 # print("bs",bs)
 #             query = torch.cat([query, encoder_hidden_states_query_proj], dim=2)
