@@ -1,1 +1,10 @@
 data/*
+
+**/*.pyc
+**/__pycache__/
+
+.env
+*.zip
+
+
+.vscode

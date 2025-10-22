@@ -1,11 +1,19 @@
 import os
 os.environ["HF_HOME"] = "/root/Desktop/workspace/yujin/woosung/.hub"
 
+from attention_map_diffusers import (
+	init_pipeline, save_attention_maps, attn_maps
+)
+
 import PIL
 from diffusers.utils import make_image_grid
 import torch
+from tqdm import tqdm
+
 from src.customized_pipe import TI2I_StableDiffusion3Pipeline
 from src.attn_processor import TI2I_JointAttnProcessor2_0_multi
+from src.util.argparse import parse_args
+from src.util.save import get_image_name, get_attn_map_dir
 
 
 # pipe = Customized_StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16)
@@ -72,6 +80,10 @@ def convert_to_raimg_prompt(source_prompt):
 
 data_dir="./data/4_quad_entry"
 out_dir="./data/output_4_quad_entry"
+
+args = parse_args()
+
+
 # "objimg_acttxt",
 for test_type in  ["case_1"]:
     if os.path.exists(f"{data_dir}/{test_type}"):
@@ -104,13 +116,19 @@ for test_type in  ["case_1"]:
 
         main_prompt=f"{obj_prompt} with texture of {tex_prompt} doing {act_prompt} in {bg_prompt}"
         sub_prompts=[obj_prompt, tex_prompt, act_prompt, bg_prompt]
+        ##### @attention_map_visualization #####
+        if bool(args.save_attn_maps):
+            for prompt in sub_prompts:
+                attn_maps[prompt] = attn_maps.get(prompt, dict())
+        #############################################
+
         refer_images=[]
-        torch.manual_seed(0)
+        torch.manual_seed(args.seed)
         for i_sbp, sbp in enumerate(sub_prompts):
             ref_img = Image.open(f"{data_dir}/refers/{index}_{i_sbp}.png")
             refer_images.append(ref_img)
 
-        torch.manual_seed(0)
+        torch.manual_seed(args.seed)
         pipe.enable_attention_slicing()
 
         layer_count = 0
@@ -119,42 +137,65 @@ for test_type in  ["case_1"]:
             global layer_count
             for child in net.children():
                 if "Attention" in child.__class__.__name__:
-                    child.processor = TI2I_JointAttnProcessor2_0_multi(layer=layer_count, contextual_replace=True,
-                                                                    wta_control_signal={"on":True,
-                                                                                        "hyper_parameter":{
-                                                                                                        "wta_weight":[1, 1, 1,1],
-                                                                                                        "cross2ref":True,
-                                                                                                        "wta_shift":[0, 0, 0,0],
-                                                                                                        "wta_cross":False
-                                                                                                        },
-                                                                                        "debug":False},
-                                                                    ref_control_signal={"on":True,
-                                                                                        "ref_idxs":[0,1,2,3],
-                                                                                        "control_type":"main_context",
-                                                                                        "debug":False,
-                                                                                        "control_layers":[i for i in range(25,40)],
-                                                                                        "hyper_parameter":{}},
-                                                                                        )
+                    child.processor = TI2I_JointAttnProcessor2_0_multi(
+                        layer=layer_count,
+                        contextual_replace=True,
+                        wta_control_signal={
+                            "on":True,
+                            "hyper_parameter":{
+                                "wta_weight":[1, 1, 1,1],
+                                "cross2ref":True,
+                                "wta_shift":[0, 0, 0,0],
+                                "wta_cross":False
+                            },
+                            "debug":False
+                        },
+                        ref_control_signal={
+                            "on":True,
+                            "ref_idxs":[0,1,2,3],
+                            "ref_prompts": sub_prompts,
+                            "control_type":"main_context",
+                            "debug":False,
+                            "control_layers":[i for i in range(25,40)],
+                            "hyper_parameter":{}
+                        },
+                        width=width // 16,
+                        height=height // 16,
+                    )
+                    ##### @attention_map_visualization #####
+                    if bool(args.save_attn_maps):
+                        child.processor.save_attn_maps = args.save_attn_maps
                     attn_processors.append(child.processor)
                     layer_count += 1
                 iter_net(child)
 
         iter_net(pipe.transformer)
+        print(f"Added attention maps storing mode to {len(attn_processors)} modules.")
 
         torch.manual_seed(0)
         pipe.enable_attention_slicing()
+        pipe = init_pipeline(pipe)
 
         switch_images = pipe.img2img_multi(
-        images=refer_images,
-        prompt_a=main_prompt,
-        prompt_b=sub_prompts,
-        negative_prompt="",
-        num_inference_steps=28,
-        guidance_scale=5,
-        strength=1,
-        height=1024,
-        width=1024,
+            images=refer_images,
+            prompt_a=main_prompt,
+            prompt_b=sub_prompts,
+            negative_prompt="",
+            num_inference_steps=28,
+            guidance_scale=5,
+            strength=1,
+            height=1024,
+            width=1024,
         )
+        image_name = f"{index:04d}-{get_image_name(args)}"
         grid_img=make_image_grid(switch_images, rows=1, cols=len(switch_images))
-        switch_images[0].save(f"{out_dir}/{gen_dir}/{index:04d}.jpg")
-        grid_img.save(f"{out_dir}/{gen_dir}/comp_{index:04d}.jpg")
+        switch_images[0].save(f"{out_dir}/{gen_dir}/{image_name}.jpg")
+        grid_img.save(f"{out_dir}/{gen_dir}/comp_{image_name}.jpg")
+
+        ##### @attention_map_visualization #####
+        if bool(args.save_attn_maps):
+            for sub_prompt in sub_prompts:
+                ref_prompt_attn_map = attn_maps[sub_prompt]
+                attn_base_dir = get_attn_map_dir(out_dir, gen_dir, image_name, args.save_attn_maps) + f"/{sub_prompt}"
+                save_attention_maps(ref_prompt_attn_map, pipe.tokenizer, sub_prompt, base_dir=attn_base_dir, unconditional=False)
+        #############################################
